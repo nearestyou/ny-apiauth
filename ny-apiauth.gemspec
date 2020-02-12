@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "ny-apiauth"
-  spec.version       = "0.0.1"
+  spec.version       = "0.0.2"
   spec.authors       = ["P Kirwin"]
   spec.email         = ["peter@puzzlesandwich.com"]
 

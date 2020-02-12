@@ -6,9 +6,9 @@ def generate(slug, user, key_id, admin_roles = [])
   t = Time.now.to_i.to_s
   admin = case
   when user.admin
-    true
+    'admin'
   when admin_roles.include?(user.role)
-    true
+    'admin'
   else
     ''
   end
