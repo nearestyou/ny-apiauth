@@ -1,7 +1,7 @@
 class ApiAuth
 class << self
 
-def generate(slug, user, key_id, admin_roles = [])
+def generate(slug, user, key_id = 'CUBITLAS_API_KEY', admin_roles = [])
   salt = SecureRandom.hex
   t = Time.now.to_i.to_s
   admin = case
@@ -13,7 +13,7 @@ def generate(slug, user, key_id, admin_roles = [])
     ''
   end
   auth_token = Digest::SHA256.new.hexdigest(slug + admin + salt + t + ENV[key_id])
-  {auth_token: auth_token, auth_time: t, company_id: slug, salt: salt, admin: admin}
+  {auth_token: auth_token, auth_time: t, company_id: slug, salt: salt, admin: admin, key_id: key_id}
 end
 
 def authenticate(params)
