@@ -1,4 +1,4 @@
-require 'ostruct'
+require 'jwt'
 class ApiAuth
 class << self
 
