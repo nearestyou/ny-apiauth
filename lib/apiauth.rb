@@ -3,7 +3,7 @@ class ApiAuth
 class << self
 
 ALGORITHM = 'HS256'
-STRUCTURE = {company_id: nil, admin: nil}
+STRUCTURE = {'company_id' => nil, 'admin' => nil}
 DT = 10
 
 def key_error(key_id)
@@ -17,9 +17,9 @@ def generate(slug, user, key_id = 'CUBITLAS_API_KEY', admin_roles = nil)
     return {api_auth_token: ke, invalid_tkn: 1}
   end
   payload = STRUCTURE.clone
-  payload[:company_id] = slug
-  payload[:auth_time] = Time.now.to_i
-  payload[:admin] = case
+  payload['company_id'] = slug
+  payload['auth_time'] = Time.now.to_i
+  payload['admin'] = case
   when user.admin
     'admin'
   when(admin_roles.present? and admin_roles.include?(user.role))
@@ -32,17 +32,16 @@ def generate(slug, user, key_id = 'CUBITLAS_API_KEY', admin_roles = nil)
 end
 
 def recover_payload(params)
-  post_process = Hash.methods.include?(:symbolize_keys) ? :symbolize_keys : :itself
   if ke = key_error(params[:key_id])
-    return STRUCTURE.merge({'disallowed' => 1, 'reason' => ke}).send(post_process)
+    return STRUCTURE.merge({'disallowed' => 1, 'reason' => ke})
   end
   decoded = JWT.decode params[:api_auth_token], ENV[params[:key_id]], true, {algorigthm: ALGORITHM}
-    allowed_keys = STRUCTURE.keys.map(&:to_s)
-    decoded.first['data'].slice(*allowed_keys).merge({'allowed' => 1}).send(post_process)
+    allowed_keys = STRUCTURE.keys
+    decoded.first['data'].slice(*allowed_keys).merge({'allowed' => 1})
 rescue JWT::VerificationError
-  STRUCTURE.merge({'disallowed' => 1, 'reason' => 'verification_error'}).send(post_process)
+  STRUCTURE.merge({'disallowed' => 1, 'reason' => 'verification_error'})
 rescue JWT::ExpiredSignature
-  STRUCTURE.merge({'disallowed' => 1, 'reason' => 'signature_expired'}).send(post_process)
+  STRUCTURE.merge({'disallowed' => 1, 'reason' => 'signature_expired'})
 end
 
 end
