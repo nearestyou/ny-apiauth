@@ -1,23 +1,48 @@
+require 'ostruct'
 class ApiAuth
 class << self
 
-def generate(slug, user, key_id = 'CUBITLAS_API_KEY', admin_roles = [])
-  salt = SecureRandom.hex
-  t = Time.now.to_i.to_s
-  admin = case
+ALGORITHM = 'HS256'
+STRUCTURE = {company_id: nil, admin: nil}
+DT = 10
+
+def key_error(key_id)
+  return 'no_such_key' if ENV[key_id].nil?
+  return 'invalid_key' unless key_id.end_with?('_NY_API_KEY')
+  false
+end
+
+def generate(slug, user, key_id = 'CUBITLAS_API_KEY', admin_roles = nil)
+  if ke = key_error(key_id)
+    return {api_auth_token: ke, invalid_tkn: 1}
+  end
+  payload = STRUCTURE.clone
+  payload[:company_id] = slug
+  payload[:auth_time] = Time.now.to_i
+  payload[:admin] = case
   when user.admin
     'admin'
-  when admin_roles.include?(user.role)
+  when(admin_roles.present? and admin_roles.include?(user.role))
     'admin'
   else
     ''
   end
-  auth_token = Digest::SHA256.new.hexdigest(slug + admin + salt + t + ENV[key_id])
-  {auth_token: auth_token, auth_time: t, company_id: slug, salt: salt, admin: admin, key_id: key_id}
+  exp_payload = {data: payload, exp: Time.now.to_i + DT}
+  {api_auth_token: JWT.encode(exp_payload, ENV[key_id], ALGORITHM), valid_tkn: 1, key_id: key_id}
 end
 
-def authenticate(params)
-  Digest::SHA256.new.hexdigest(params[:company_id] + (params[:admin] || '') + params[:salt] + params[:auth_time] + ENV[params[:key_id]]) == params[:auth_token] and Time.now.to_i - params[:auth_time].to_i < 10
+def recover_payload(params)
+  post_process = Hash.methods.include?(:symbolize_keys) ? :symbolize_keys : :itself
+  if ke = key_error(params[:key_id])
+    return STRUCTURE.merge({'disallowed' => 1, 'reason' => ke}).send(post_process)
+  end
+  decoded = JWT.decode params[:api_auth_token], ENV[params[:key_id]], true, {algorigthm: ALGORITHM}
+    allowed_keys = STRUCTURE.keys.map(&:to_s)
+    decoded.first['data'].slice(*allowed_keys).merge({'allowed' => 1}).send(post_process)
+rescue JWT::VerificationError
+  STRUCTURE.merge({'disallowed' => 1, 'reason' => 'verification_error'}).send(post_process)
+rescue JWT::ExpiredSignature
+  STRUCTURE.merge({'disallowed' => 1, 'reason' => 'signature_expired'}).send(post_process)
 end
 
 end

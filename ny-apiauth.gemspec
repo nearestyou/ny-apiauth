@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "ny-apiauth"
-  spec.version       = "0.0.3"
+  spec.version       = "1.0.0"
   spec.authors       = ["P Kirwin"]
   spec.email         = ["peter@puzzlesandwich.com"]
 
@@ -9,4 +9,6 @@ Gem::Specification.new do |spec|
 
   spec.files         = ["lib/apiauth.rb"]
   spec.require_paths = ["lib"]
+
+  spec.add_runtime_dependency 'jwt'
 end
